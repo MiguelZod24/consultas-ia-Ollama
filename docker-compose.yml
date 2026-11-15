@@ -1,0 +1,77 @@
+# Arranque:  docker compose up --build
+# Después:   http://localhost:8080
+
+services:
+
+  # Base de datos
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: consultas_ia
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+    volumes:
+      - ./base-de-datos/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - datos_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "127.0.0.1", "-uapp", "-papp", "-e", "SELECT 1 FROM consultas_ia.consultas LIMIT 1"]
+      interval: 5s
+      retries: 30
+
+  # Servidor de IA local
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - datos_ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      retries: 30
+
+  # Descarga el modelo la primera vez y termina
+  descargar-modelo:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama show llama3.2:3b > /dev/null 2>&1 || ollama pull llama3.2:3b"]   # ← modelo (1 de 2)
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  # Servicio de IA en Python
+  servicio-ia:
+    build: ./servicio-ia
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODELO: llama3.2:3b                      # ← modelo (2 de 2)
+    ports:
+      - "8000:8000"   # documentación automática en http://localhost:8000/docs
+    depends_on:
+      descargar-modelo:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/salud')"]
+      interval: 5s
+      retries: 30
+
+  # Back (PHP) + front
+  web:
+    build: ./web
+    environment:
+      DB_HOST: db
+      DB_NOMBRE: consultas_ia
+      DB_USUARIO: app
+      DB_CLAVE: app
+      IA_URL: http://servicio-ia:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+      servicio-ia:
+        condition: service_healthy
+
+volumes:
+  datos_mysql:
+  datos_ollama:
