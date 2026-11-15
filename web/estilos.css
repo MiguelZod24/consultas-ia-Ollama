@@ -1,0 +1,138 @@
+/* Colores de Eciglogistica, definidos una sola vez */
+:root {
+    --rojo: #E32B33;
+    --rojo-oscuro: #C21F27;
+    --marino: #16263B;
+    --fondo: #F3F4F6;
+    --borde: #E2E5EA;
+    --gris: #6B7280;
+    --sombra: 0 2px 8px rgba(22, 38, 59, 0.06);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Montserrat', system-ui, sans-serif;
+    background: var(--fondo);
+    color: var(--marino);
+}
+
+.contenedor { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+/* Cabecera */
+.cabecera {
+    background: var(--marino);
+    color: white;
+    padding: 28px 0;
+    border-bottom: 5px solid var(--rojo);
+}
+.cabecera h1 { margin: 0 0 6px; font-size: 1.7rem; }
+.cabecera p  { margin: 0; opacity: 0.8; }
+
+main.contenedor { display: grid; gap: 24px; margin-top: 28px; margin-bottom: 40px; }
+
+/* Tarjetas */
+.tarjeta {
+    background: white;
+    border-radius: 12px;
+    padding: 24px 28px;
+    box-shadow: var(--sombra);
+}
+.tarjeta h2 { margin: 0 0 16px; font-size: 1.1rem; }
+
+/* Formulario */
+textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font: inherit;
+    border: 2px solid var(--borde);
+    border-radius: 8px;
+    resize: vertical;
+}
+textarea:focus { outline: none; border-color: var(--rojo); }
+
+button { font: inherit; font-weight: 600; cursor: pointer; border: none; border-radius: 8px; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#boton {
+    margin-top: 12px;
+    padding: 12px 24px;
+    background: var(--rojo);
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+}
+#boton:hover:not(:disabled) { background: var(--rojo-oscuro); }
+
+/* Resultado de la clasificación */
+.resultado {
+    margin-top: 18px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border-left: 6px solid var(--gris);
+    background: var(--fondo);
+}
+.resultado .categoria-grande { display: block; font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+.resultado .detalle { color: var(--gris); font-size: 0.85rem; }
+.oculto { display: none; }
+
+/* Contadores (también son los filtros) */
+.contadores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.contador {
+    background: white;
+    padding: 18px 20px;
+    text-align: left;
+    color: var(--marino);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    box-shadow: var(--sombra);
+}
+.contador:hover  { border-color: var(--borde); }
+.contador.activo { border-color: var(--rojo); }
+.contador .numero { display: block; font-size: 2rem; font-weight: 700; }
+.contador .nombre { font-size: 0.85rem; color: var(--gris); font-weight: 500; }
+
+/* Tabla */
+table { width: 100%; border-collapse: collapse; }
+th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gris);
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--borde);
+}
+td { padding: 14px 12px; border-bottom: 1px solid var(--borde); font-size: 0.9rem; vertical-align: top; }
+td.secundario { color: var(--gris); font-size: 0.8rem; white-space: nowrap; }
+tbody tr:hover { background: #FAFAFB; }
+
+/* Etiquetas de categoría */
+.etiqueta {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Colores por categoría (para etiquetas y para el resultado) */
+.soporte        { background: #FDECEC; color: #B4141C; border-color: var(--rojo); }
+.comercial      { background: #E8EEF7; color: #1F3F6E; border-color: #2B4C7E; }
+.gracias        { background: #E6F6EE; color: #13744A; border-color: #1E8E5A; }
+.sin-clasificar { background: #EEF0F3; color: var(--gris); }
+.resultado.error { background: #FDECEC; color: #9B1C1C; border-color: var(--rojo); }
+
+/* Paginación */
+.paginacion { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; }
+.paginacion button { padding: 8px 16px; background: var(--fondo); color: var(--marino); }
+.paginacion button:hover:not(:disabled) { background: var(--marino); color: white; }
+#info-pagina { color: var(--gris); font-size: 0.85rem; }
+
+/* Móvil */
+@media (max-width: 700px) {
+    .contadores { grid-template-columns: repeat(2, 1fr); }
+}

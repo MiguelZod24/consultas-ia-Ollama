@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clasificador de consultas con IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <header class="cabecera">
+        <div class="contenedor">
+            <h1>Clasificador de consultas</h1>
+            <p>Las consultas de los clientes se clasifican automáticamente con IA</p>
+        </div>
+    </header>
+
+    <main class="contenedor">
+        <section class="tarjeta">
+            <h2>Nueva consulta</h2>
+            <form id="formulario">
+                <textarea id="texto" rows="4" maxlength="2000" required
+                    placeholder="Ej.: Mi paquete lleva 5 días sin moverse del almacén"></textarea>
+                <button type="submit" id="boton">Enviar</button>
+            </form>
+            <div id="resultado" class="resultado oculto"></div>
+        </section>
+
+        <section id="contadores" class="contadores"></section>
+
+        <section class="tarjeta">
+            <h2>Consultas guardadas</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Consulta</th>
+                        <th>Categoría</th>
+                        <th>Modelo</th>
+                        <th>Tiempo</th>
+                    </tr>
+                </thead>
+                <tbody id="listado"></tbody>
+            </table>
+            <div class="paginacion">
+                <button id="anterior">← Anterior</button>
+                <span id="info-pagina"></span>
+                <button id="siguiente">Siguiente →</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
