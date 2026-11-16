@@ -29,22 +29,31 @@ services:
       interval: 5s
       retries: 30
 
-  # Descarga el modelo la primera vez y termina
+    # Descarga los modelos la primera vez (si ya están, no hace nada) y termina
   descargar-modelo:
     image: ollama/ollama:latest
     environment:
       OLLAMA_HOST: http://ollama:11434
-    entrypoint: ["/bin/sh", "-c", "ollama show llama3.2:3b > /dev/null 2>&1 || ollama pull llama3.2:3b"]   # ← modelo (1 de 2)
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for modelo in llama3.2:3b qwen3-embedding:0.6b; do   # ← modelos
+          ollama show $$modelo > /dev/null 2>&1 || ollama pull $$modelo || exit 1
+        done
     depends_on:
       ollama:
         condition: service_healthy
 
-  # Servicio de IA en Python
+    # Servicio de IA en Python
   servicio-ia:
     build: ./servicio-ia
     environment:
       OLLAMA_URL: http://ollama:11434
-      OLLAMA_MODELO: llama3.2:3b                      # ← modelo (2 de 2)
+      OLLAMA_MODELO: llama3.2:3b                         # ← modelo de chat
+      OLLAMA_MODELO_EMBEDDINGS: qwen3-embedding:0.6b     # ← modelo de embeddings
+    volumes:
+      - ./README.md:/app/documentos/proyecto-README.md:ro
+      - cache_embeddings:/app/cache
     ports:
       - "8000:8000"   # documentación automática en http://localhost:8000/docs
     depends_on:
@@ -53,7 +62,7 @@ services:
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/salud')"]
       interval: 5s
-      retries: 30
+      retries: 60
 
   # Back (PHP) + front
   web:
@@ -75,3 +84,4 @@ services:
 volumes:
   datos_mysql:
   datos_ollama:
+  cache_embeddings:
