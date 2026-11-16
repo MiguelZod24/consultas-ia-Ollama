@@ -16,7 +16,7 @@ Sin Git: en GitHub, botón **Code → Download ZIP**, descomprímelo y ejecuta `
 
 Cuando termine, abre **http://localhost:8080**
 
-- **La primera vez** se descargan unos 7 GB (imágenes de Docker y modelos de IA) y tarda varios minutos. La web no arranca hasta que el modelo está listo.
+- **La primera vez** se descargan unos 7 GB (imágenes de Docker y modelos de IA) y tarda varios minutos. La web no arranca hasta que los modelos están descargados y el asistente está preparado.
 - **La primera consulta** tarda 10–20 s, porque Ollama carga el modelo en memoria. Las siguientes, 1–2 s.
 - **Para parar:** `docker compose down`
 - **Si va lento o alguna consulta queda en "Error al clasificar"**, suele ser falta de memoria: Docker Desktop usa por defecto la mitad de la RAM del equipo, y los modelos necesitan unos 4 GB libres.
@@ -58,7 +58,7 @@ El enunciado permitía usar una API externa o simular la respuesta:
 | Respuesta simulada | No es IA real: falla en cuanto el mensaje es ambiguo |
 | **Ollama** | **IA real, sin claves, sin coste y sin enviar datos fuera** |
 
-Este proyecto es una demostración sin datos reales, pero en un sistema real de atención al cliente las consultas podrían incluir nombres, direcciones o números de pedido. Además, funciona sin internet una vez descargado el modelo.
+Este proyecto es una demostración sin datos reales, pero en un sistema real de atención al cliente las consultas podrían incluir nombres, direcciones o números de pedido. Además, funciona sin internet una vez descargados los modelos.
 
 ## Por qué el modelo `llama3.2:3b`
 
@@ -67,7 +67,7 @@ Este proyecto es una demostración sin datos reales, pero en un sistema real de 
 - **No tiene "modo razonamiento"**: algunos modelos recientes "piensan en voz alta" antes de responder, lo que los hace más lentos sin aportar nada al clasificar.
 - **Su resultado está medido** (ver la sección siguiente).
 
-Para cambiar de modelo, basta con cambiar su nombre en `docker-compose.yml` (marcado con `← modelo`).
+Para cambiar de modelo, basta con cambiar su nombre en los dos sitios de `docker-compose.yml` marcados con `←`: la lista de modelos que se descargan y `OLLAMA_MODELO`.
 
 ## Evaluación del modelo
 
@@ -87,7 +87,7 @@ El botón 💬 de la esquina abre un chat que responde preguntas sobre Ollama y 
 
 **Cómo funciona** (`servicio-ia/asistente.py`):
 1. Al arrancar, los documentos de `servicio-ia/documentos/` (documentación oficial de Ollama y este README) se cortan en trozos y cada trozo se convierte en un **embedding** (un vector que representa su significado) con el modelo `qwen3-embedding:0.6b`. Se guardan en una caché para no recalcularlos en cada arranque.
-2. Cuando llega una pregunta, se busca por **similitud del coseno** los trozos más parecidos: siempre 2 del README del proyecto y 3 de la documentación de Ollama, para que ninguna de las dos fuentes quede fuera.
+2. Cuando llega una pregunta, se buscan por **similitud del coseno** los trozos más parecidos: siempre 2 del README del proyecto y 3 de la documentación de Ollama, para que ninguna de las dos fuentes quede fuera.
 3. `llama3.2:3b` responde con esos trozos y la respuesta llega a la web **en streaming** (palabra a palabra) a través de PHP (`web/asistente.php`). Debajo de cada respuesta se muestran las fuentes usadas.
 
 **Decisiones:**
