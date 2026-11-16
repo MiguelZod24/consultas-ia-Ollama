@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="estilos.css">
+    <link rel="stylesheet" href="asistente.css">
 </head>
 <body>
     <header class="cabecera">
@@ -51,6 +52,28 @@
         </section>
     </main>
 
+       <!-- Asistente sobre Ollama (minichat flotante) -->
+    <button id="asistente-boton" class="asistente-boton" aria-label="Abrir asistente">💬</button>
+    <section id="asistente" class="asistente oculto" aria-label="Asistente sobre Ollama">
+        <header class="asistente-cabecera">
+            <div>
+                <strong>Asistente Ollama</strong>
+                <span>Responde con la documentación del proyecto</span>
+            </div>
+            <button id="asistente-cerrar" aria-label="Cerrar">×</button>
+        </header>
+        <div id="asistente-mensajes" class="asistente-mensajes"></div>
+        <div id="asistente-sugerencias" class="asistente-sugerencias">
+            <button>¿Qué es Ollama?</button>
+            <button>¿Por qué se usa en este proyecto?</button>
+            <button>¿Ollama envía mis datos a internet?</button>
+        </div>
+        <form id="asistente-formulario" class="asistente-formulario">
+            <input id="asistente-pregunta" maxlength="500" placeholder="Escribe tu pregunta…" autocomplete="off">
+            <button type="submit" id="asistente-enviar" aria-label="Enviar">➤</button>
+        </form>
+    </section>
+
     <script src="app.js"></script>
+    <script src="asistente.js"></script>
 </body>
-</html>
