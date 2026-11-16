@@ -2,26 +2,55 @@
 
 Sistema que recibe consultas de clientes, las clasifica con IA en el momento en que entran (**Soporte Técnico**, **Duda Comercial** o **Agradecimiento**) y las guarda en una base de datos. Incluye además un **asistente** que responde preguntas sobre Ollama y sobre el propio proyecto. Toda la IA funciona en local con **Ollama**.
 
+> ⏱️ **Importante: la primera instalación tarda unos minutos**, según la conexión y el equipo, porque se descargan los modelos de IA y se preparan. Es normal y solo ocurre la primera vez: después arranca en menos de un minuto.
+
 ## Instalación
 
-**Requisitos:** [Docker Desktop](https://www.docker.com/products/docker-desktop/), unos 10 GB libres de disco y 8 GB de RAM.
+**Requisitos:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y **abierto**, unos 10 GB libres de disco y 8 GB de RAM. No hace falta configurar nada ni ninguna clave de API.
+
+### 1. Descargar el proyecto
 
 ```bash
 git clone https://github.com/MiguelZod24/consultas-ia-Ollama.git
 cd consultas-ia-Ollama
+```
+
+Sin Git: en GitHub, botón **Code → Download ZIP**, descomprímelo y abre una terminal dentro de la carpeta (la que contiene `docker-compose.yml`).
+
+### 2. Arrancar
+
+```bash
 docker compose up --build
 ```
 
-Sin Git: en GitHub, botón **Code → Download ZIP**, descomprímelo y ejecuta `docker compose up --build` dentro de la carpeta.
+### 3. Esperar (solo la primera vez)
 
-Cuando termine, abre **http://localhost:8080**
+Mientras tanto, Docker hace tres cosas por sí solo:
+1. Descarga las imágenes de MySQL, PHP, Python y Ollama (unos 5 GB).
+2. Descarga los dos modelos de IA: `llama3.2:3b` (unos 2 GB) y `qwen3-embedding:0.6b` (menos de 1 GB).
+3. Prepara el asistente: calcula los embeddings de la documentación.
 
-- **La primera vez** se descargan unos 7 GB (imágenes de Docker y modelos de IA) y tarda varios minutos. La web no arranca hasta que los modelos están descargados y el asistente está preparado.
-- **La primera consulta** tarda 10–20 s, porque Ollama carga el modelo en memoria. Las siguientes, 1–2 s.
-- **Para parar:** `docker compose down`
-- **Si va lento o alguna consulta queda en "Error al clasificar"**, suele ser falta de memoria: Docker Desktop usa por defecto la mitad de la RAM del equipo, y los modelos necesitan unos 4 GB libres.
+La terminal mostrará muchos mensajes y en algunos momentos puede parecer parada o limpiarse: **es normal, no la cierres**.
 
-No hace falta configurar nada ni ninguna clave de API.
+**Cómo saber que está listo:** en Docker Desktop → **Containers**, dentro del grupo con el nombre de la carpeta (por ejemplo `consultas-ia-ollama`), los contenedores `db`, `ollama`, `servicio-ia` y `web` aparecen en verde. `descargar-modelo` aparece **detenido**, y es correcto: descarga los modelos y termina.
+
+### 4. Abrir la aplicación
+
+Abre **http://localhost:8080**
+
+- **La primera consulta** (y la primera pregunta al asistente 💬) tarda 10–20 s, porque Ollama carga los modelos en memoria. Las siguientes, 1–2 s.
+- Si la página no carga, es que aún no ha terminado de arrancar: espera un poco más.
+
+### Parar y volver a arrancar
+
+```bash
+docker compose down     # parar (los datos se conservan)
+docker compose up -d    # volver a arrancar: tarda menos de un minuto
+```
+
+### Si va lento o alguna consulta queda en "Error al clasificar"
+
+Suele ser falta de memoria: Docker Desktop usa por defecto la mitad de la RAM del equipo, y los modelos necesitan unos 4 GB libres. La primera consulta puede fallar mientras se cargan los modelos; las siguientes funcionan, aunque más despacio.
 
 ## Cómo funciona
 
@@ -83,7 +112,7 @@ Es una muestra pequeña, así que no garantiza que nunca falle. Se puede ampliar
 
 ## Asistente sobre Ollama (RAG)
 
-El botón 💬 de la esquina abre un chat que responde preguntas sobre Ollama y sobre este proyecto. Usa la técnica **RAG** (*Retrieval-Augmented Generation*): en lugar de responder "de memoria", el modelo busca primero en la documentación y responde **solo con lo que encuentra**. Si la respuesta no está, lo dice en vez de inventarla.
+El botón 💬 de la esquina abre un chat que responde preguntas sobre Ollama y sobre este proyecto, con **respuestas en streaming**: el texto aparece palabra a palabra mientras el modelo lo genera. Usa la técnica **RAG** (*Retrieval-Augmented Generation*): en lugar de responder "de memoria", el modelo busca primero en la documentación y responde **solo con lo que encuentra**. Si la respuesta no está, lo dice en vez de inventarla.
 
 **Cómo funciona** (`servicio-ia/asistente.py`):
 1. Al arrancar, los documentos de `servicio-ia/documentos/` (documentación oficial de Ollama y este README) se cortan en trozos y cada trozo se convierte en un **embedding** (un vector que representa su significado) con el modelo `qwen3-embedding:0.6b`. Se guardan en una caché para no recalcularlos en cada arranque.
@@ -91,6 +120,11 @@ El botón 💬 de la esquina abre un chat que responde preguntas sobre Ollama y 
 3. `llama3.2:3b` responde con esos trozos y la respuesta llega a la web **en streaming** (palabra a palabra) a través de PHP (`web/asistente.php`). Debajo de cada respuesta se muestran las fuentes usadas.
 
 **Decisiones:**
+- **Respuestas en streaming:** sin tarjeta gráfica, el modelo tarda unos segundos en escribir una respuesta completa. Con streaming, la respuesta empieza a verse en cuanto se genera la primera palabra, en lugar de esperar con la pantalla vacía. Cada pieza va pasando el texto a trozos a medida que lo recibe:
+  - **Ollama** genera la respuesta con `"stream": true`.
+  - **Python** la reenvía con `StreamingResponse`, una línea JSON por evento: primero las fuentes, luego el texto a trozos y al final una señal de fin (formato NDJSON).
+  - **PHP** (`web/asistente.php`) la reenvía al navegador con curl y `flush()`, sin búferes, para respetar la arquitectura en la que la web solo habla con PHP.
+  - **El navegador** la lee a trozos con `fetch` y `getReader()`, y va añadiendo cada palabra al chat.
 - **Documentación en inglés, preguntas en español:** el modelo de embeddings es **multilingüe**, así que encuentra el texto correcto aunque esté en otro idioma, y el prompt le pide responder siempre en español.
 - **Embeddings en memoria con caché en archivo**, sin base de datos de vectores: con unos 40 trozos, la búsqueda es instantánea. Con miles de documentos se usaría una base de datos de vectores (Qdrant, pgvector…).
 - **Memoria de la conversación en el navegador:** se envían las últimas 3 preguntas y respuestas, y para buscar se usa también la pregunta anterior (así "¿Y es gratis?" se entiende en contexto). El servidor no guarda nada.
