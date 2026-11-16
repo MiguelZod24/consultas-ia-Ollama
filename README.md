@@ -1,22 +1,25 @@
 # Clasificador de consultas con IA
 
-Sistema que recibe consultas de clientes, las clasifica con IA en el momento en que entran (**Soporte Técnico**, **Duda Comercial** o **Agradecimiento**) y las guarda en una base de datos. La IA funciona en local con **Ollama**.
+Sistema que recibe consultas de clientes, las clasifica con IA en el momento en que entran (**Soporte Técnico**, **Duda Comercial** o **Agradecimiento**) y las guarda en una base de datos. Incluye además un **asistente** que responde preguntas sobre Ollama y sobre el propio proyecto. Toda la IA funciona en local con **Ollama**.
 
 ## Instalación
 
 **Requisitos:** [Docker Desktop](https://www.docker.com/products/docker-desktop/), unos 10 GB libres de disco y 8 GB de RAM.
 
 ```bash
-git clone <URL-DEL-REPOSITORIO>
-cd consultas-ia
+git clone https://github.com/MiguelZod24/consultas-ia-Ollama.git
+cd consultas-ia-Ollama
 docker compose up --build
 ```
 
+Sin Git: en GitHub, botón **Code → Download ZIP**, descomprímelo y ejecuta `docker compose up --build` dentro de la carpeta.
+
 Cuando termine, abre **http://localhost:8080**
 
-- **La primera vez** se descargan unos 6 GB (imágenes de Docker y modelo de IA) y tarda varios minutos. La web no arranca hasta que el modelo está listo.
+- **La primera vez** se descargan unos 7 GB (imágenes de Docker y modelos de IA) y tarda varios minutos. La web no arranca hasta que el modelo está listo.
 - **La primera consulta** tarda 10–20 s, porque Ollama carga el modelo en memoria. Las siguientes, 1–2 s.
 - **Para parar:** `docker compose down`
+- **Si va lento o alguna consulta queda en "Error al clasificar"**, suele ser falta de memoria: Docker Desktop usa por defecto la mitad de la RAM del equipo, y los modelos necesitan unos 4 GB libres.
 
 No hace falta configurar nada ni ninguna clave de API.
 
@@ -77,3 +80,22 @@ docker compose exec servicio-ia python evaluar.py
 **Resultado: 40 de 40 aciertos (100 %), con una media de 1,9 s por consulta.**
 
 Es una muestra pequeña, así que no garantiza que nunca falle. Se puede ampliar añadiendo consultas al archivo JSON, y sirve para comprobar que un cambio en el prompt o en el modelo no empeora los resultados.
+
+## Asistente sobre Ollama (RAG)
+
+El botón 💬 de la esquina abre un chat que responde preguntas sobre Ollama y sobre este proyecto. Usa la técnica **RAG** (*Retrieval-Augmented Generation*): en lugar de responder "de memoria", el modelo busca primero en la documentación y responde **solo con lo que encuentra**. Si la respuesta no está, lo dice en vez de inventarla.
+
+**Cómo funciona** (`servicio-ia/asistente.py`):
+1. Al arrancar, los documentos de `servicio-ia/documentos/` (documentación oficial de Ollama y este README) se cortan en trozos y cada trozo se convierte en un **embedding** (un vector que representa su significado) con el modelo `qwen3-embedding:0.6b`. Se guardan en una caché para no recalcularlos en cada arranque.
+2. Cuando llega una pregunta, se busca por **similitud del coseno** los trozos más parecidos: siempre 2 del README del proyecto y 3 de la documentación de Ollama, para que ninguna de las dos fuentes quede fuera.
+3. `llama3.2:3b` responde con esos trozos y la respuesta llega a la web **en streaming** (palabra a palabra) a través de PHP (`web/asistente.php`). Debajo de cada respuesta se muestran las fuentes usadas.
+
+**Decisiones:**
+- **Documentación en inglés, preguntas en español:** el modelo de embeddings es **multilingüe**, así que encuentra el texto correcto aunque esté en otro idioma, y el prompt le pide responder siempre en español.
+- **Embeddings en memoria con caché en archivo**, sin base de datos de vectores: con unos 40 trozos, la búsqueda es instantánea. Con miles de documentos se usaría una base de datos de vectores (Qdrant, pgvector…).
+- **Memoria de la conversación en el navegador:** se envían las últimas 3 preguntas y respuestas, y para buscar se usa también la pregunta anterior (así "¿Y es gratis?" se entiende en contexto). El servidor no guarda nada.
+- **Seguridad:** el texto se muestra sin interpretarlo como HTML (contra XSS) y el historial solo admite mensajes de usuario y de asistente.
+
+La primera pregunta tras arrancar tarda más, porque Ollama carga los modelos en memoria; también tras unos minutos sin uso, porque Ollama los descarga de la memoria.
+
+La documentación de Ollama incluida procede de [docs.ollama.com](https://docs.ollama.com) (licencia MIT).
